@@ -26,26 +26,30 @@
 		}
 	],
 	// ========== WORKSHOP: AI RECOMMENDATION FEATURE - BINDINGS START ==========
+
+	// Lab Instructions: For step 3.1 in the lab guide, uncomment the AI binding below
 	// Workers AI binding for LLM inference
-	"ai": {
-		"binding": "AI"
-	},
+	// "ai": {
+	// 	"binding": "AI"
+	// },
+
+	// Lab Instructions: For step 3.2 in the lab guide, uncomment the durable_objects & migrations bindings below
 	// Durable Objects binding for managing report analysis state
-	"durable_objects": {
-		"bindings": [
-			{
-				"name": "REPORT_ANALYZER",
-				"class_name": "ReportAnalyzer"
-			}
-		]
-	},
-	// Migrations for Durable Objects
-	"migrations": [
-		{
-			"tag": "v1",
-			"new_classes": ["ReportAnalyzer"]
-		}
-	]
+	// "durable_objects": {
+	// 	"bindings": [
+	// 		{
+	// 			"name": "REPORT_ANALYZER",
+	// 			"class_name": "ReportAnalyzer"
+	// 		}
+	// 	]
+	// },
+	// // Migrations for Durable Objects
+	// "migrations": [
+	// 	{
+	// 		"tag": "v1",
+	// 		"new_classes": ["ReportAnalyzer"]
+	// 	}
+	// ]
 	// ========== WORKSHOP: AI RECOMMENDATION FEATURE - BINDINGS END ==========
 	/**
 	 * Smart Placement

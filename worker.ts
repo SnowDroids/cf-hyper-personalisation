@@ -6,10 +6,8 @@
 // @ts-ignore - .open-next/worker.js is generated at build time
 import { default as handler } from "./.open-next/worker.js";
 
-// ========== WORKSHOP: DURABLE OBJECT EXPORT START ==========
-// Export the Durable Object class
-export { ReportAnalyzer } from './src/durable-objects/ReportAnalyzer';
-// ========== WORKSHOP: DURABLE OBJECT EXPORT END ==========
+// Lab Instructions: For step 4.6 in the lab guide, uncomment the line below
+//export { ReportAnalyzer } from './src/durable-objects/ReportAnalyzer';
 
 // Export the default OpenNext handler
 export default handler;

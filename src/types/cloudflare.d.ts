@@ -5,8 +5,11 @@ declare module '@cloudflare/workers-types' {
     ASSETS: Fetcher;
     NEXTJS_ENV: string;
     // ========== WORKSHOP: AI RECOMMENDATION FEATURE - TYPE DEFINITIONS START ==========
-    AI: Ai;
-    REPORT_ANALYZER: DurableObjectNamespace;
+    
+    // Lab Instructions: For step 3.3 in the lab guide, uncomment the two lines below
+    //AI: Ai;
+    //REPORT_ANALYZER: DurableObjectNamespace;
+
     // ========== WORKSHOP: AI RECOMMENDATION FEATURE - TYPE DEFINITIONS END ==========
   }
 }

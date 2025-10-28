@@ -2,9 +2,9 @@
 
 import { useState, FormEvent } from 'react';
 import ReportArchiveModal from '@/components/ReportArchiveModal';
-// ========== WORKSHOP: AI RECOMMENDATION FEATURE - IMPORTS START ==========
-import RecommendationModal from '@/components/RecommendationModal';
-// ========== WORKSHOP: AI RECOMMENDATION FEATURE - IMPORTS END ==========
+
+// Lab Instructions: For step 7.1, uncomment the line below
+//import RecommendationModal from '@/components/RecommendationModal';
 
 // Predefined locations with a cheeky twist
 const LOCATIONS = [
@@ -36,10 +36,9 @@ export default function Home() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - STATE START ==========
-  const [recommendation, setRecommendation] = useState<string | null>(null);
-  const [showRecommendationModal, setShowRecommendationModal] = useState(false);
-  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - STATE END ==========
+  // Lab Instructions: For Step 7.2, uncomment the two lines below
+  // const [recommendation, setRecommendation] = useState<string | null>(null);
+  // const [ showRecommendationModal, setShowRecommendationModal] = useState(false);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -62,28 +61,32 @@ export default function Home() {
     setMessage(null);
 
     try {
-      // Step 1: Send the new report to the Durable Object for AI analysis
-      const response = await fetch('/api/reports/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Lab Instructions: For Step 7.3, uncomment the code below
 
-      const data = await response.json() as { recommendation?: string | null; error?: string };
+      // === Lab Step 7.3 START ===
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to analyze report');
-      }
+      // // Step 1: Send the new report to the Durable Object for AI analysis
+      // const response = await fetch('/api/reports/analyze', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(formData),
+      // });
+      // const data = await response.json() as { recommendation?: string | null; error?: string };
+      // if (!response.ok) {
+      //   throw new Error(data.error || 'Failed to analyze report');
+      // }
 
-      // Step 2: If AI has recommendations, show the modal
-      if (data.recommendation) {
-        setRecommendation(data.recommendation);
-        setShowRecommendationModal(true);
-        setIsSubmitting(false);
-        return;
-      }
+      // // Step 2: If AI has recommendations, show the modal
+      // if (data.recommendation) {
+      //   setRecommendation(data.recommendation);
+      //   setShowRecommendationModal(true);
+      //   setIsSubmitting(false);
+      //   return;
+      // }
+
+      // === Lab Step 7.3 END ===
 
       // Step 3: If no recommendations, submit directly
       await submitReport();
@@ -131,9 +134,9 @@ export default function Home() {
         recommendedAction: '',
       });
 
-      // Close modal if open
-      setShowRecommendationModal(false);
-      setRecommendation(null);
+      // Lab instructions: For step 7.2.1, uncomment the two lines below
+      // setShowRecommendationModal(false);
+      // setRecommendation(null);
     } catch (error) {
       setMessage({
         type: 'error',
@@ -144,24 +147,28 @@ export default function Home() {
     }
   };
 
+  // Lab Instructions: For step 7.4, uncomment the helper functions below in the "helper functions" section (specifically: handleSubmitAnyway and handleEditReport)
+  // ========== WORKSHOP: HELPER FUNCTIONS START ========== 
+
   /**
    * Handle when user wants to edit the report after seeing recommendations
    */
-  const handleEditReport = () => {
-    setShowRecommendationModal(false);
-    setRecommendation(null);
-    setIsSubmitting(false);
-    // Form data is preserved, user can edit
-  };
+  // const handleEditReport = () => {
+  //   setShowRecommendationModal(false);
+  //   setRecommendation(null);
+  //   setIsSubmitting(false);
+  //   // Form data is preserved, user can edit
+  // };
 
   /**
    * Handle when user wants to submit anyway despite recommendations
    */
-  const handleSubmitAnyway = async () => {
-    setIsSubmitting(true);
-    await submitReport();
-  };
-  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - SUBMIT LOGIC END ==========
+  // const handleSubmitAnyway = async () => {
+  //   setIsSubmitting(true);
+  //   await submitReport();
+  // };
+
+  // ========== WORKSHOP: HELPER FUNCTIONS END ========== 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -395,15 +402,15 @@ export default function Home() {
           onClose={() => setIsModalOpen(false)}
         />
 
-        {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - MODAL START ========== */}
-        {/* AI Recommendation Modal */}
-        <RecommendationModal
+        {/* 
+        *  Lab Instructions: For step 7.5, uncomment the use of the component. 
+        */}
+        {/* <RecommendationModal
           isOpen={showRecommendationModal}
           recommendation={recommendation || ''}
           onEdit={handleEditReport}
           onSubmitAnyway={handleSubmitAnyway}
-        />
-        {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - MODAL END ========== */}
+        /> */}
       </div>
     </div>
   );
