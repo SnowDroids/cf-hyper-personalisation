@@ -4,6 +4,10 @@ declare module '@cloudflare/workers-types' {
     DB: D1Database;
     ASSETS: Fetcher;
     NEXTJS_ENV: string;
+    // ========== WORKSHOP: AI RECOMMENDATION FEATURE - TYPE DEFINITIONS START ==========
+    AI: Ai;
+    REPORT_ANALYZER: DurableObjectNamespace;
+    // ========== WORKSHOP: AI RECOMMENDATION FEATURE - TYPE DEFINITIONS END ==========
   }
 }
 

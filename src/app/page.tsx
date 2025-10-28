@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import ReportArchiveModal from '@/components/ReportArchiveModal';
+// ========== WORKSHOP: AI RECOMMENDATION FEATURE - IMPORTS START ==========
+import RecommendationButton from '@/components/RecommendationButton';
+import RecommendationModal from '@/components/RecommendationModal';
+// ========== WORKSHOP: AI RECOMMENDATION FEATURE - IMPORTS END ==========
 
 // Predefined locations with a cheeky twist
 const LOCATIONS = [
@@ -48,6 +52,61 @@ export default function Home() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - STATE START ==========
+  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [showRecommendationModal, setShowRecommendationModal] = useState(false);
+  const [currentInspector, setCurrentInspector] = useState<string | null>(null);
+  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - STATE END ==========
+
+  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - FETCH LOGIC START ==========
+  // Fetch recommendations when the page loads or when inspector changes
+  useEffect(() => {
+    const fetchRecommendation = async () => {
+      // Get inspector from localStorage
+      const storedInspector = localStorage.getItem('currentInspector');
+      if (!storedInspector) {
+        return;
+      }
+
+      setCurrentInspector(storedInspector);
+
+      try {
+        const response = await fetch(
+          `/api/recommendations?inspector=${encodeURIComponent(storedInspector)}`
+        );
+        const data = await response.json() as { recommendation: string | null };
+        
+        if (data.recommendation) {
+          setRecommendation(data.recommendation);
+        }
+      } catch (error) {
+        console.error('Error fetching recommendation:', error);
+      }
+    };
+
+    fetchRecommendation();
+  }, []);
+
+  // Handle ignoring a recommendation
+  const handleIgnoreRecommendation = async () => {
+    if (!currentInspector) return;
+
+    try {
+      await fetch('/api/recommendations/ignore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inspector: currentInspector }),
+      });
+
+      // Clear the recommendation from state
+      setRecommendation(null);
+      setShowRecommendationModal(false);
+    } catch (error) {
+      console.error('Error ignoring recommendation:', error);
+    }
+  };
+  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - FETCH LOGIC END ==========
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -63,6 +122,13 @@ export default function Home() {
         ...prev,
         digitalSignature: value,
       }));
+      // ========== WORKSHOP: AI RECOMMENDATION FEATURE - INSPECTOR TRACKING START ==========
+      // Store inspector name in localStorage for recommendation tracking
+      if (value) {
+        localStorage.setItem('currentInspector', value);
+        setCurrentInspector(value);
+      }
+      // ========== WORKSHOP: AI RECOMMENDATION FEATURE - INSPECTOR TRACKING END ==========
     }
   };
 
@@ -383,6 +449,21 @@ export default function Home() {
 
       {/* Report Archive Modal */}
       <ReportArchiveModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+      {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - UI COMPONENTS START ========== */}
+      {/* Recommendation Button - Only show if we have a recommendation */}
+      {recommendation && (
+        <RecommendationButton onClick={() => setShowRecommendationModal(true)} />
+      )}
+
+      {/* Recommendation Modal */}
+      <RecommendationModal
+        isOpen={showRecommendationModal}
+        recommendation={recommendation}
+        onClose={() => setShowRecommendationModal(false)}
+        onIgnore={handleIgnoreRecommendation}
+      />
+      {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - UI COMPONENTS END ========== */}
     </div>
   );
 }

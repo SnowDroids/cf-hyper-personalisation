@@ -24,7 +24,29 @@
 			"database_name": "safety-reports-db",
 			"database_id": "c843e7f9-041a-45e3-856d-93e4fd6437f5"
 		}
+	],
+	// ========== WORKSHOP: AI RECOMMENDATION FEATURE - BINDINGS START ==========
+	// Workers AI binding for LLM inference
+	"ai": {
+		"binding": "AI"
+	},
+	// Durable Objects binding for managing report analysis state
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "REPORT_ANALYZER",
+				"class_name": "ReportAnalyzer"
+			}
+		]
+	},
+	// Migrations for Durable Objects
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["ReportAnalyzer"]
+		}
 	]
+	// ========== WORKSHOP: AI RECOMMENDATION FEATURE - BINDINGS END ==========
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
