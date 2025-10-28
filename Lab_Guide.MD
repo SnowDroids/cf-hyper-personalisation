@@ -50,14 +50,14 @@ An AI writing coach that:
 
 ### Step 1: Database Setup
 
-1. **Create the D1 database**
+- **1.1: Create the D1 database**
    ```bash
    npx wrangler d1 create safety-reports-db
    ```
    
    Copy the `database_id` from the output. Wrangler may offer to add it to `wrangler.jsonc` automatically.
 
-2. **Update wrangler.jsonc** (if needed)
+- **1.2: Update wrangler.jsonc** (if needed)
    
    Locate the `d1_databases` section and ensure your database ID is present:
    ```jsonc
@@ -70,13 +70,13 @@ An AI writing coach that:
    ]
    ```
 
-3. **Initialize the database schema**
+- **1.3: Initialize the database schema**
    ```bash
    npx wrangler d1 execute safety-reports-db --file=./schema.sql
    npx wrangler d1 execute safety-reports-db --remote --file=./schema.sql
    ```
 
-4. **Verify setup**
+- **1.4: Verify setup**
    ```bash
    npx wrangler d1 execute safety-reports-db --command="SELECT * FROM reports"
    ```
@@ -85,21 +85,21 @@ An AI writing coach that:
 
 ### Step 2: Initial Deployment
 
-1. **Preview the application**
+- **2.1: Preview the application**
    ```bash
    npm run preview
    ```
    
    Test that you can create and view reports. Press `Ctrl+C` to stop when done.
 
-2. **Deploy to Cloudflare**
+- **2.2: Deploy to Cloudflare**
    ```bash
    npm run deploy
    ```
    
    Note the worker name from the output (you'll need it in the next step).
 
-3. **View your deployed app**
+- **2.3: View your deployed app**
    - Go to [Cloudflare Dashboard](https://dash.cloudflare.com/?to=/:account/workers-and-pages)
    - Click your worker
    - Click the blue **"Visit"** button
@@ -110,7 +110,7 @@ An AI writing coach that:
 
 Now we'll add bindings for Workers AI and Durable Objects.
 
-1. **Add Workers AI binding**
+- **3.1: Add Workers AI binding**
    
    Open `wrangler.jsonc` and add after the `d1_databases` section:
    ```jsonc
@@ -119,7 +119,7 @@ Now we'll add bindings for Workers AI and Durable Objects.
    },
    ```
 
-2. **Add Durable Objects binding**
+- **3.2: Add Durable Objects binding**
    
    Add after the AI binding:
    ```jsonc
@@ -139,7 +139,7 @@ Now we'll add bindings for Workers AI and Durable Objects.
    ]
    ```
 
-3. **Update TypeScript types**
+- **3.3: Update TypeScript types**
    
    Open `src/types/cloudflare.d.ts` and add to the `Env` interface:
    ```typescript
@@ -147,7 +147,7 @@ Now we'll add bindings for Workers AI and Durable Objects.
    REPORT_ANALYZER: DurableObjectNamespace;
    ```
 
-4. **Regenerate types**
+- **3.4: Regenerate types**
    ```bash
    npm run cf-typegen
    ```
@@ -157,29 +157,20 @@ Now we'll add bindings for Workers AI and Durable Objects.
 ### Step 4: Create the Durable Object
 
 The Durable Object will analyze reports using Workers AI.
+Please note that all steps here in "Step 4" are in the context of the `ReportAnalyzer.ts` file, except for steps 4.6.
 
-1. **Create the file**
+- **4.1: Rename the ReportAnalyzer.ts.example file**
    
-   Create `src/durable-objects/ReportAnalyzer.ts`
+   Remove ".example" from `src/durable-objects/ReportAnalyzer.ts.example` to `src/durable-objects/ReportAnalyzer.ts`
 
-2. **Add the basic structure**
+- **4.2: Uncomment the code to implement the Durable Object**
    
    The file should:
-   - Import `DurableObject` from `'cloudflare:workers'`
-   - Define a `Report` interface with fields: `id`, `date_of_inspection`, `location`, `inspector_name`, `observed_hazard`, `severity_rating`, `recommended_action`, `created_at`
-   - Export a class `ReportAnalyzer` that extends `DurableObject`
-   - Implement a `fetch()` method that handles POST requests to `/analyze-report`
+   1. Import `DurableObject` from `'cloudflare:workers'`
+   2. Define a `Report` interface with fields: `id`, `date_of_inspection`, `location`, `inspector_name`, `observed_hazard`, `severity_rating`, `recommended_action`, `created_at`
+   3. Implement a `fetch()` method, in the provided `ReportAnalyzer` class, that handles POST requests to `/analyze-report`
 
-3. **Implement the fetch handler**
-   
-   The handler should:
-   - Parse the new report from the request body
-   - Validate that `inspector_name` is present
-   - Call `fetchPreviousReports()` to get context
-   - Call `analyzeReport()` to get AI recommendations
-   - Return the recommendation (or null if none)
-
-4. **Query D1 for previous reports**
+- **4.3: Query D1 for previous reports**
    
    Create a `fetchPreviousReports()` method that:
    - Uses `this.env.DB` to access the database
@@ -187,7 +178,7 @@ The Durable Object will analyze reports using Workers AI.
    - Uses `.bind()` to safely pass the inspector name
    - Returns the results as an array
 
-5. **Build the AI prompt**
+- **4.4: Build the AI prompt**
    
    Create a `buildAnalysisPrompt()` method that:
    - Takes the new report and previous reports as parameters
@@ -196,7 +187,7 @@ The Durable Object will analyze reports using Workers AI.
    - Asks the AI to provide 1-2 specific improvement tips
    - Instructs the AI to return null if the report is already well-written
 
-6. **Call Workers AI**
+- **4.5: Call Workers AI**
    
    Create an `analyzeReport()` method that:
    - Builds the prompt using `buildAnalysisPrompt()`
@@ -205,24 +196,9 @@ The Durable Object will analyze reports using Workers AI.
    - Returns the recommendation or null
    - Filters out non-actionable responses (e.g., "well-written", "no improvements")
 
-7. **Export the Durable Object**
+- **4.6: Export the Durable Object**
    
-   Create a custom worker file `worker.ts` in the project root:
-   ```typescript
-   // @ts-ignore
-   import { default as handler } from "./.open-next/worker.js";
-   
-   export { ReportAnalyzer } from './src/durable-objects/ReportAnalyzer';
-   
-   export default handler;
-   ```
-
-8. **Update wrangler.jsonc**
-   
-   Change the `main` field to point to your custom worker:
-   ```jsonc
-   "main": "worker.ts",
-   ```
+   In the existing `worker.ts` file, you'll need to export the `ReportAnalyzer` class. 
 
 ---
 
@@ -230,11 +206,11 @@ The Durable Object will analyze reports using Workers AI.
 
 Create an API route that forwards reports to the Durable Object for analysis.
 
-1. **Create the file**
+- **5.1: Rename the example toute.ts file**
    
-   Create `src/app/api/reports/analyze/route.ts`
+   Rename `src/app/api/reports/analyze/route.ts.example` to `src/app/api/reports/analyze/route.ts`
 
-2. **Implement the POST handler**
+- **5.2: Implement the POST handler**
    
    The handler should:
    - Import `NextRequest`, `NextResponse` from `'next/server'`
@@ -255,11 +231,11 @@ Create an API route that forwards reports to the Durable Object for analysis.
 
 Build a modal that displays AI recommendations with "Edit Report" and "Submit Anyway" buttons.
 
-1. **Create the file**
+- **6.1: Create the file**
    
    Create `src/components/RecommendationModal.tsx`
 
-2. **Component structure**
+- **6.2: Component structure**
    
    The modal should:
    - Accept props: `isOpen`, `recommendation`, `onEdit`, `onSubmitAnyway`
@@ -271,50 +247,39 @@ Build a modal that displays AI recommendations with "Edit Report" and "Submit An
    - Close on Escape key press
    - Prevent body scroll when open
 
-3. **Styling**
-   
-   Use Tailwind CSS classes for:
-   - A gradient header (blue to purple)
-   - An amber-colored info box
-   - Rounded corners and shadows
-   - Responsive design
-
 ---
 
 ### Step 7: Integrate into Main Page
 
 Update the main page to analyze reports before submission.
 
-1. **Add imports**
-   
-   In `src/app/page.tsx`, import:
-   ```typescript
-   import RecommendationModal from '@/components/RecommendationModal';
-   ```
+- **7.1: Add import to page.tsx**
+   - Import the recommendationModal component.
 
-2. **Add state**
+- **7.2: Add state**
    
    Add these state variables:
    ```typescript
    const [recommendation, setRecommendation] = useState<string | null>(null);
    const [showRecommendationModal, setShowRecommendationModal] = useState(false);
    ```
+   - **7.2.1: Update the submit handler**
+      - Update `submitForm()` to call `setShowRecommendationModal(false)` and `setRecommendation(null)` after clearing the form
 
-3. **Modify the submit handler**
+- **7.3: Modify the submit handler**
    
    Update `handleSubmit` to:
    - Call `/api/reports/analyze` instead of directly submitting
    - If a recommendation is returned, show the modal
    - If no recommendation, proceed with normal submission
 
-4. **Add helper functions**
+- **7.4: Add helper functions**
    
    Create:
-   - `submitReport()` - Actually saves the report to D1 (extracted from current `handleSubmit`)
    - `handleEditReport()` - Closes modal, preserves form data
    - `handleSubmitAnyway()` - Calls `submitReport()` despite recommendations
 
-5. **Add the modal to JSX**
+- **7.5: Add the modal to JSX**
    
    At the end of the component, before the closing `</div>`:
    ```typescript
@@ -330,41 +295,37 @@ Update the main page to analyze reports before submission.
 
 ### Step 8: Test the Feature
 
-1. **Start the preview server**
+- **8.1: Start the preview server**
    ```bash
    npm run preview
    ```
 
-2. **Submit a report**
+- **8.2: Submit a report**
    - Fill out the form completely
    - Select an inspector name
    - Click "Submit Report"
    - Since there are no previous reports, it should submit normally
 
-3. **Submit a second report**
+- **8.3: Submit a second report**
    - Use the **same inspector name**
    - Fill out the form with different content
    - Click "Submit Report"
    - You should see the AI recommendation modal appear
 
-4. **Test the modal actions**
+- **8.4: Test the modal actions**
    - Try "Edit Report" - modal closes, form data is preserved
    - Submit again and try "Submit Anyway" - report is saved despite recommendations
 
-5. **Test with different inspectors**
-   - Each inspector gets their own DO instance
-   - Recommendations are personalized based on their writing history
-
 ---
 
-### Step 9: Deploy to Production
+### Step 9: Deploy updated code to Production
 
-1. **Deploy**
+- **9.1:Deploy**
    ```bash
    npm run deploy
    ```
 
-2. **Test in production**
+- **9.2: Test in production**
    - Visit your worker's URL
    - Submit 2 reports with the same inspector
    - Verify the AI recommendations work
