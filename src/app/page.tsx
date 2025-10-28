@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent } from 'react';
 import ReportArchiveModal from '@/components/ReportArchiveModal';
 // ========== WORKSHOP: AI RECOMMENDATION FEATURE - IMPORTS START ==========
-import RecommendationButton from '@/components/RecommendationButton';
 import RecommendationModal from '@/components/RecommendationModal';
 // ========== WORKSHOP: AI RECOMMENDATION FEATURE - IMPORTS END ==========
 
@@ -12,27 +11,13 @@ const LOCATIONS = [
   'The Danger Zone (aka Loading Dock)',
   'Sketchy Stairwell #3',
   'That One Hallway Everyone Avoids',
-  'The "Temporary" Storage Area (Est. 2015)',
-  'Break Room of Broken Dreams',
-  'Parking Lot Pothole Paradise',
-  'The Mysterious Basement',
-  'Roof Access (Authorized Personnel Only... Sure)',
-  'Conference Room B (The Wobbly One)',
-  'Main Entrance (Where the Floor Tiles Go to Die)',
 ];
 
 // Predefined inspector names with personality
 const INSPECTORS = [
-  'Safety Steve (The Stickler)',
+  'Safety Steve',
   'Cautious Carol',
   'Hazard Harry',
-  'Vigilant Veronica',
-  'Meticulous Mike',
-  'Observant Olivia',
-  'Thorough Theodore',
-  'Perceptive Patricia',
-  'Diligent Dave',
-  'Watchful Wendy',
 ];
 
 const SEVERITY_LEVELS = ['Low', 'Medium', 'High', 'Critical'];
@@ -45,7 +30,6 @@ export default function Home() {
     observedHazard: '',
     severityRating: '',
     recommendedAction: '',
-    digitalSignature: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,57 +39,7 @@ export default function Home() {
   // ========== WORKSHOP: AI RECOMMENDATION FEATURE - STATE START ==========
   const [recommendation, setRecommendation] = useState<string | null>(null);
   const [showRecommendationModal, setShowRecommendationModal] = useState(false);
-  const [currentInspector, setCurrentInspector] = useState<string | null>(null);
   // ========== WORKSHOP: AI RECOMMENDATION FEATURE - STATE END ==========
-
-  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - FETCH LOGIC START ==========
-  // Fetch recommendations when the page loads or when inspector changes
-  useEffect(() => {
-    const fetchRecommendation = async () => {
-      // Get inspector from localStorage
-      const storedInspector = localStorage.getItem('currentInspector');
-      if (!storedInspector) {
-        return;
-      }
-
-      setCurrentInspector(storedInspector);
-
-      try {
-        const response = await fetch(
-          `/api/recommendations?inspector=${encodeURIComponent(storedInspector)}`
-        );
-        const data = await response.json() as { recommendation: string | null };
-        
-        if (data.recommendation) {
-          setRecommendation(data.recommendation);
-        }
-      } catch (error) {
-        console.error('Error fetching recommendation:', error);
-      }
-    };
-
-    fetchRecommendation();
-  }, []);
-
-  // Handle ignoring a recommendation
-  const handleIgnoreRecommendation = async () => {
-    if (!currentInspector) return;
-
-    try {
-      await fetch('/api/recommendations/ignore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inspector: currentInspector }),
-      });
-
-      // Clear the recommendation from state
-      setRecommendation(null);
-      setShowRecommendationModal(false);
-    } catch (error) {
-      console.error('Error ignoring recommendation:', error);
-    }
-  };
-  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - FETCH LOGIC END ==========
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -115,28 +49,58 @@ export default function Home() {
       ...prev,
       [name]: value,
     }));
-
-    // Auto-populate digital signature when inspector name is selected
-    if (name === 'inspectorName') {
-      setFormData((prev) => ({
-        ...prev,
-        digitalSignature: value,
-      }));
-      // ========== WORKSHOP: AI RECOMMENDATION FEATURE - INSPECTOR TRACKING START ==========
-      // Store inspector name in localStorage for recommendation tracking
-      if (value) {
-        localStorage.setItem('currentInspector', value);
-        setCurrentInspector(value);
-      }
-      // ========== WORKSHOP: AI RECOMMENDATION FEATURE - INSPECTOR TRACKING END ==========
-    }
   };
 
+  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - SUBMIT LOGIC START ==========
+  /**
+   * Handle form submission
+   * This now checks with AI before actually saving the report
+   */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setMessage(null);
 
+    try {
+      // Step 1: Send the new report to the Durable Object for AI analysis
+      const response = await fetch('/api/reports/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json() as { recommendation?: string | null; error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze report');
+      }
+
+      // Step 2: If AI has recommendations, show the modal
+      if (data.recommendation) {
+        setRecommendation(data.recommendation);
+        setShowRecommendationModal(true);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Step 3: If no recommendations, submit directly
+      await submitReport();
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'An error occurred',
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * Actually submit the report to the database
+   * Called either after AI analysis (no recommendations) or when user clicks "Submit Anyway"
+   */
+  const submitReport = async () => {
     try {
       const response = await fetch('/api/reports', {
         method: 'POST',
@@ -165,8 +129,11 @@ export default function Home() {
         observedHazard: '',
         severityRating: '',
         recommendedAction: '',
-        digitalSignature: '',
       });
+
+      // Close modal if open
+      setShowRecommendationModal(false);
+      setRecommendation(null);
     } catch (error) {
       setMessage({
         type: 'error',
@@ -176,6 +143,25 @@ export default function Home() {
       setIsSubmitting(false);
     }
   };
+
+  /**
+   * Handle when user wants to edit the report after seeing recommendations
+   */
+  const handleEditReport = () => {
+    setShowRecommendationModal(false);
+    setRecommendation(null);
+    setIsSubmitting(false);
+    // Form data is preserved, user can edit
+  };
+
+  /**
+   * Handle when user wants to submit anyway despite recommendations
+   */
+  const handleSubmitAnyway = async () => {
+    setIsSubmitting(true);
+    await submitReport();
+  };
+  // ========== WORKSHOP: AI RECOMMENDATION FEATURE - SUBMIT LOGIC END ==========
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -248,222 +234,177 @@ export default function Home() {
         {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl shadow-lg p-8 space-y-8"
+          className="bg-white rounded-xl shadow-lg p-8 space-y-6"
         >
-          {/* Section 1: Basic Information */}
+          {/* Date of Inspection */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b-2 border-blue-500">
-              Section 1: Basic Information
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label
-                  htmlFor="dateOfInspection"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Date of Inspection <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="dateOfInspection"
-                  name="dateOfInspection"
-                  value={formData.dateOfInspection}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="location"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Location <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  <option value="">Select a location</option>
-                  {LOCATIONS.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="inspectorName"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Inspector Name <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="inspectorName"
-                  name="inspectorName"
-                  value={formData.inspectorName}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  <option value="">Select an inspector</option>
-                  {INSPECTORS.map((inspector) => (
-                    <option key={inspector} value={inspector}>
-                      {inspector}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Observation Details */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b-2 border-orange-500">
-              Section 2: Observation Details
-            </h2>
-            <div className="space-y-6">
-              <div>
-                <label
-                  htmlFor="observedHazard"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Observed Hazard/Issue <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="observedHazard"
-                  name="observedHazard"
-                  value={formData.observedHazard}
-                  onChange={handleInputChange}
-                  required
-                  rows={4}
-                  placeholder="Describe the hazard or safety issue in detail..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="severityRating"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Severity Rating <span className="text-red-500">*</span>
-                </label>
-                <select
-                  id="severityRating"
-                  name="severityRating"
-                  value={formData.severityRating}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  <option value="">Select severity level</option>
-                  {SEVERITY_LEVELS.map((level) => (
-                    <option key={level} value={level}>
-                      {level}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="recommendedAction"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Recommended Immediate Action <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="recommendedAction"
-                  name="recommendedAction"
-                  value={formData.recommendedAction}
-                  onChange={handleInputChange}
-                  required
-                  rows={4}
-                  placeholder="Describe the recommended corrective actions..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Sign-Off */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 pb-2 border-b-2 border-green-500">
-              Section 3: Sign-Off
-            </h2>
-            <div>
-              <label
-                htmlFor="digitalSignature"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Digital Signature <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="digitalSignature"
-                name="digitalSignature"
-                value={formData.digitalSignature}
-                onChange={handleInputChange}
-                required
-                placeholder="Your name as digital signature"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-serif italic"
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                This will be auto-populated when you select an inspector name
-              </p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium shadow-md hover:shadow-lg"
+            <label
+              htmlFor="dateOfInspection"
+              className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Open Report Archive
-            </button>
+              Date of Inspection *
+            </label>
+            <input
+              type="date"
+              id="dateOfInspection"
+              name="dateOfInspection"
+              value={formData.dateOfInspection}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Location */}
+          <div>
+            <label
+              htmlFor="location"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Location *
+            </label>
+            <select
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            >
+              <option value="">Select a location...</option>
+              {LOCATIONS.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Inspector Name */}
+          <div>
+            <label
+              htmlFor="inspectorName"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Inspector Name *
+            </label>
+            <select
+              id="inspectorName"
+              name="inspectorName"
+              value={formData.inspectorName}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            >
+              <option value="">Select an inspector...</option>
+              {INSPECTORS.map((inspector) => (
+                <option key={inspector} value={inspector}>
+                  {inspector}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Observed Hazard */}
+          <div>
+            <label
+              htmlFor="observedHazard"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Observed Hazard *
+            </label>
+            <textarea
+              id="observedHazard"
+              name="observedHazard"
+              value={formData.observedHazard}
+              onChange={handleInputChange}
+              required
+              rows={4}
+              placeholder="Describe the hazard in detail..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          {/* Severity Rating */}
+          <div>
+            <label
+              htmlFor="severityRating"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Severity Rating *
+            </label>
+            <select
+              id="severityRating"
+              name="severityRating"
+              value={formData.severityRating}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            >
+              <option value="">Select severity...</option>
+              {SEVERITY_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Recommended Action */}
+          <div>
+            <label
+              htmlFor="recommendedAction"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Recommended Action *
+            </label>
+            <textarea
+              id="recommendedAction"
+              name="recommendedAction"
+              value={formData.recommendedAction}
+              onChange={handleInputChange}
+              required
+              rows={4}
+              placeholder="What actions should be taken to address this hazard?"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex gap-4">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md hover:shadow-lg disabled:bg-blue-300 disabled:cursor-not-allowed"
+              className="flex-1 bg-yellow-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Report'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+            >
+              View Archive
             </button>
           </div>
         </form>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Safety First, Always. Report any hazards immediately.</p>
-        </div>
+        {/* Report Archive Modal */}
+        <ReportArchiveModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
+
+        {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - MODAL START ========== */}
+        {/* AI Recommendation Modal */}
+        <RecommendationModal
+          isOpen={showRecommendationModal}
+          recommendation={recommendation || ''}
+          onEdit={handleEditReport}
+          onSubmitAnyway={handleSubmitAnyway}
+        />
+        {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - MODAL END ========== */}
       </div>
-
-      {/* Report Archive Modal */}
-      <ReportArchiveModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
-      {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - UI COMPONENTS START ========== */}
-      {/* Recommendation Button - Only show if we have a recommendation */}
-      {recommendation && (
-        <RecommendationButton onClick={() => setShowRecommendationModal(true)} />
-      )}
-
-      {/* Recommendation Modal */}
-      <RecommendationModal
-        isOpen={showRecommendationModal}
-        recommendation={recommendation}
-        onClose={() => setShowRecommendationModal(false)}
-        onIgnore={handleIgnoreRecommendation}
-      />
-      {/* ========== WORKSHOP: AI RECOMMENDATION FEATURE - UI COMPONENTS END ========== */}
     </div>
   );
 }

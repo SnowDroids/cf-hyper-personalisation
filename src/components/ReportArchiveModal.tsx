@@ -10,7 +10,6 @@ export interface SafetyReport {
   observed_hazard: string;
   severity_rating: string;
   recommended_action: string;
-  digital_signature: string;
   created_at: string;
 }
 
@@ -264,11 +263,7 @@ export default function ReportArchiveModal({ isOpen, onClose }: ReportArchiveMod
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Digital Signature
-                  </label>
-                  <p className="text-gray-900 italic">{selectedReport.digital_signature}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     Submitted on {new Date(selectedReport.created_at).toLocaleString()}
                   </p>
                 </div>

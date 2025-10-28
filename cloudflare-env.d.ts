@@ -7,7 +7,7 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		NEXTJS_ENV: string;
-		REPORT_ANALYZER: DurableObjectNamespace /* ReportAnalyzer from next-js-workers-test */;
+		REPORT_ANALYZER: DurableObjectNamespace /* ReportAnalyzer from cf-hyper-personalisation */;
 		DB: D1Database;
 		AI: Ai;
 		ASSETS: Fetcher;

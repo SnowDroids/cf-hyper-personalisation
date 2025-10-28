@@ -8,7 +8,6 @@ interface ReportData {
   observedHazard: string;
   severityRating: string;
   recommendedAction: string;
-  digitalSignature: string;
 }
 
 // GET /api/reports - Fetch all reports
@@ -61,7 +60,6 @@ export async function POST(request: NextRequest) {
       'observedHazard',
       'severityRating',
       'recommendedAction',
-      'digitalSignature',
     ];
 
     for (const field of requiredFields) {
@@ -82,9 +80,8 @@ export async function POST(request: NextRequest) {
           inspector_name,
           observed_hazard,
           severity_rating,
-          recommended_action,
-          digital_signature
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+          recommended_action
+        ) VALUES (?, ?, ?, ?, ?, ?)`
       )
       .bind(
         body.dateOfInspection,
@@ -92,8 +89,7 @@ export async function POST(request: NextRequest) {
         body.inspectorName,
         body.observedHazard,
         body.severityRating,
-        body.recommendedAction,
-        body.digitalSignature
+        body.recommendedAction
       )
       .run();
 

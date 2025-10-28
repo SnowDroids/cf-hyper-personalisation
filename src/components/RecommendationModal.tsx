@@ -1,16 +1,18 @@
 /**
  * RecommendationModal Component
  * 
- * A modal dialog that displays AI-generated writing recommendations.
+ * A modal dialog that displays AI-generated writing recommendations
+ * when a user tries to submit a report.
+ * 
  * Includes two action buttons:
- * - Close: Simply closes the modal (recommendation persists)
- * - Ignore: Closes the modal and marks the recommendation as ignored
+ * - Edit Report: Closes the modal so user can edit their report
+ * - Submit Anyway: Submits the report despite the recommendations
  * 
  * Props:
  * - isOpen: Whether the modal is visible
  * - recommendation: The AI-generated recommendation text
- * - onClose: Function to call when closing the modal
- * - onIgnore: Function to call when ignoring the recommendation
+ * - onEdit: Function to call when user wants to edit the report
+ * - onSubmitAnyway: Function to call when user wants to submit anyway
  */
 
 'use client';
@@ -20,28 +22,28 @@ import { useEffect } from 'react';
 // ========== WORKSHOP: RECOMMENDATION MODAL COMPONENT START ==========
 interface RecommendationModalProps {
   isOpen: boolean;
-  recommendation: string | null;
-  onClose: () => void;
-  onIgnore: () => void;
+  recommendation: string;
+  onEdit: () => void;
+  onSubmitAnyway: () => void;
 }
 
 export default function RecommendationModal({
   isOpen,
   recommendation,
-  onClose,
-  onIgnore,
+  onEdit,
+  onSubmitAnyway,
 }: RecommendationModalProps) {
   // Close modal on Escape key press
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        onEdit();
       }
     };
     
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, onEdit]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function RecommendationModal({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
-        onClick={onClose}
+        onClick={onEdit}
         aria-hidden="true"
       />
 
@@ -95,12 +97,12 @@ export default function RecommendationModal({
                     />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold">AI Writing Tips</h2>
+                <h2 className="text-2xl font-bold">AI Writing Suggestions</h2>
               </div>
               
               {/* Close button */}
               <button
-                onClick={onClose}
+                onClick={onEdit}
                 className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
                 aria-label="Close modal"
               >
@@ -123,10 +125,10 @@ export default function RecommendationModal({
 
           {/* Content */}
           <div className="p-6">
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6">
               <div className="flex items-start">
                 <svg
-                  className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0"
+                  className="w-5 h-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -136,8 +138,8 @@ export default function RecommendationModal({
                     clipRule="evenodd"
                   />
                 </svg>
-                <p className="text-sm text-blue-800">
-                  Based on your recent safety reports, here are some suggestions to improve your writing:
+                <p className="text-sm text-amber-800">
+                  Before submitting, consider these suggestions to improve your report:
                 </p>
               </div>
             </div>
@@ -152,16 +154,16 @@ export default function RecommendationModal({
           {/* Footer with action buttons */}
           <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex gap-3 justify-end">
             <button
-              onClick={onClose}
+              onClick={onEdit}
               className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
-              Close
+              Edit Report
             </button>
             <button
-              onClick={onIgnore}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              onClick={onSubmitAnyway}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              Ignore & Don&apos;t Show Again
+              Submit Anyway
             </button>
           </div>
         </div>

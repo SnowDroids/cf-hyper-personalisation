@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS reports (
     observed_hazard TEXT NOT NULL,
     severity_rating TEXT NOT NULL,
     recommended_action TEXT NOT NULL,
-    digital_signature TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
