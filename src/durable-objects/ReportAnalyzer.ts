@@ -13,10 +13,8 @@
  * 3. Managing recommendation state
  */
 
-// DurableObject is available globally in the Cloudflare Workers runtime
-// We don't need to import it - it's provided by the platform
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare const DurableObject: any;
+// Import DurableObject from cloudflare:workers
+import { DurableObject } from 'cloudflare:workers';
 
 // ========== WORKSHOP: TYPE DEFINITIONS START ==========
 // Interface for the state stored in Durable Object storage
@@ -203,7 +201,7 @@ export class ReportAnalyzer extends DurableObject {
       .bind(this.inspectorName)
       .all();
     
-    const results = result.results as Report[];
+    const results = result.results as unknown as Report[];
     
     console.log(`Found ${results.length} reports for ${this.inspectorName}`);
     return results;
