@@ -56,6 +56,7 @@ An AI writing coach that:
    ```
    
    Copy the `database_id` from the output. Wrangler may offer to add it to `wrangler.jsonc` automatically.
+   *IMPORTANT!* - If you have wrangler automatically update your `wrangler.jsonc` file, check to make sure that the property `binding` is set to `DB` and "database_name" is set to "safety-reports-db".
 
 - **1.2: Update wrangler.jsonc** (if needed)
    
